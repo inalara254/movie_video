@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Watch Episode</title>
+</head>
+<body>
+<h1>Now Playing</h1>
+<div id="player-container">Loading video...</div>
+
+<script>
+  async function getM3U8Url(dramaId, episodeSid) {
+    const res = await fetch(`/api/episodes/${dramaId}/${episodeSid}`);
+    const data = await res.json();
+    return data?.data?.watchInfo?.m3u8?.url;
+  }
+
+  (async () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const dramaId = urlParams.get('dramaId');
+    const episodeSid = urlParams.get('episodeSid');
+
+    if (!dramaId || !episodeSid) {
+      document.getElementById('player-container').textContent = 'Missing episode information.';
+      return;
+    }
+
+    const videoUrl = await getM3U8Url(dramaId, episodeSid);
+
+    if (!videoUrl) {
+      document.getElementById('player-container').textContent = 'Unable to load video.';
+      return;
+    }
+
+    const video = document.createElement('video');
+    video.src = videoUrl;
+    video.controls = true;
+    video.autoplay = true;
+    video.style.width = '70%';
+
+    const container = document.getElementById('player-container');
+    container.innerHTML = '';
+    container.appendChild(video);
+  })();
+</script>
+</body>
+</html>

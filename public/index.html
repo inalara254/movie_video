@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Drama Search</title>
+    <style>
+        body {
+          font-family: Arial, sans-serif;
+          background-color: #f3f3f3;
+          padding: 2rem;
+          max-width: 800px;
+          margin: auto;
+        }
+
+        h1 {
+          text-align: center;
+          margin-bottom: 1rem;
+        }
+
+        form {
+          display: flex;
+          margin-bottom: 2rem;
+        }
+
+        input[type="text"] {
+          flex: 1;
+          padding: 0.5rem;
+          font-size: 1rem;
+        }
+
+        button {
+          padding: 0.5rem 1rem;
+          font-size: 1rem;
+          margin-left: 0.5rem;
+          cursor: pointer;
+        }
+
+        .search-results, .episodes {
+          margin-top: 2rem;
+        }
+
+        .search-item, .episode-item {
+          padding: 1rem;
+          background: white;
+          margin-bottom: 0.5rem;
+          border-radius: 8px;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .search-item:hover, .episode-item:hover {
+          background-color: #f0f0f0;
+        }
+
+        .title {
+          font-weight: bold;
+        }
+
+        .subtitle {
+          color: #666;
+          font-size: 0.9rem;
+        }
+        .search-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.cover {
+  width: 80px;
+  height: auto;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.info {
+  flex: 1;
+}
+
+    </style>
+</head>
+<body>
+<h1>Search for Dramas</h1>
+
+<form id="search-form">
+    <input type="text" id="search-query" placeholder="Enter drama name..." required />
+    <button type="submit">Search</button>
+</form>
+
+<div class="search-results" id="results"></div>
+<div class="episodes" id="episodes"></div>
+
+<script>
+    const form = document.getElementById('search-form');
+    const resultsContainer = document.getElementById('results');
+    const episodesContainer = document.getElementById('episodes');
+    let currentDramaId = null;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const query = document.getElementById('search-query').value;
+      resultsContainer.innerHTML = 'Searching...';
+      episodesContainer.innerHTML = '';
+      try {
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        const list = data?.data?.searchDramaList || [];
+
+        resultsContainer.innerHTML = list.length
+          ? list.map(item => `
+              <div class="search-item" data-id="${item.id}">
+                <img src="${item.cover}" alt="${item.title}" class="cover"/>
+                <div class="title">${item.title}</div>
+                <div class="subtitle">${item.subtitle || ''}</div>
+              </div>
+            `).join('')
+          : '<p>No results found.</p>';
+
+        document.querySelectorAll('.search-item').forEach(item => {
+          item.addEventListener('click', () => {
+            currentDramaId = item.getAttribute('data-id');
+            loadEpisodes(currentDramaId);
+          });
+        });
+      } catch (err) {
+        resultsContainer.innerHTML = '<p>Error fetching search results.</p>';
+      }
+    });
+
+    async function loadEpisodes(dramaId) {
+      episodesContainer.innerHTML = 'Loading episodes...';
+      try {
+        const res = await fetch(`/api/episodes/${dramaId}`);
+        const data = await res.json();
+        const list = data?.data?.episodeList || [];
+
+        if (!list.length) {
+          episodesContainer.innerHTML = '<p>No playable episodes found.</p>';
+          return;
+        }
+
+        episodesContainer.innerHTML = list.map(ep => `
+          <div class="episode-item" data-sid="${ep.sid}">
+            Episode ${ep.episodeNo}
+          </div>
+        `).join('');
+
+        document.querySelectorAll('.episode-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const sid = item.getAttribute('data-sid');
+            window.location.href = `/watch?dramaId=${currentDramaId}&episodeSid=${sid}`;
+          });
+        });
+      } catch (err) {
+        episodesContainer.innerHTML = '<p>Error loading episodes.</p>';
+      }
+    }
+</script>
+</body>
+</html>
