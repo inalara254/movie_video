@@ -7,7 +7,6 @@ import json
 import sys
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-from six import print_
 from video_dencrpyt import decrypt_m3u8_url
 import urllib.parse
 
